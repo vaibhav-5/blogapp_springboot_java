@@ -9,6 +9,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -18,9 +20,11 @@ import lombok.ToString;
 @Entity(name = "users")
 @Getter
 @Setter
+@Builder
 @ToString
 @RequiredArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class UserEntity {
 
 	@Id
@@ -34,7 +38,7 @@ public class UserEntity {
 	
 	@Column(nullable = false)
 	@NonNull
-	private String Email;
+	private String email;
 	
 	@Column(nullable = true)
 	@Nullable
