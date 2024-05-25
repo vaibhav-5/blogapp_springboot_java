@@ -1,5 +1,6 @@
 package com.blog.app.users;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,11 +12,15 @@ public class UsersService {
 	@Autowired
 	private UsersRepository userRepository;
 	
+	@Autowired
+	private ModelMapper modelMapper;
+	
 	public UserEntity createUser(CreateUserRequest userDto) {
-		var newUser = UserEntity.builder()
+		UserEntity newUser = modelMapper.map(userDto, UserEntity.class);
+		/*var newUser = UserEntity.builder()
 				.userName(userDto.getUserName())
 				.email(userDto.getEmail())
-				.build();
+				.build();*/
 		return userRepository.save(newUser);
 	}
 	
