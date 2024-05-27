@@ -2,6 +2,7 @@ package com.blog.app.users;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.blog.app.users.dto.CreateUserRequest;
@@ -15,12 +16,13 @@ public class UsersService {
 	@Autowired
 	private ModelMapper modelMapper;
 	
+	@Autowired
+	private PasswordEncoder passwordEncoder;
+	
 	public UserEntity createUser(CreateUserRequest userDto) {
 		UserEntity newUser = modelMapper.map(userDto, UserEntity.class);
-		/*var newUser = UserEntity.builder()
-				.userName(userDto.getUserName())
-				.email(userDto.getEmail())
-				.build();*/
+		newUser.setPassword(passwordEncoder.encode(userDto.getPassword()));
+		
 		return userRepository.save(newUser);
 	}
 	
@@ -34,6 +36,10 @@ public class UsersService {
 	
 	public UserEntity loginUser(String userName, String password) {
 		var user = userRepository.findByUserName(userName).orElseThrow(()-> new UserNotFoundException(userName));
+		var passMatch = passwordEncoder.matches(password, user.getPassword());
+		if(!passMatch) {
+			throw new InvalidCredentialsException();
+		}
 		return user;
 	}
 	
@@ -46,6 +52,14 @@ public class UsersService {
 		public UserNotFoundException(Long id) {
 			super("User with id " + id + " not found.");
 		}
+	}
+	
+public static class InvalidCredentialsException extends IllegalArgumentException{
+		
+		public InvalidCredentialsException() {
+			super("Invalid username or password");
+		}
+		
 	}
 	
 }

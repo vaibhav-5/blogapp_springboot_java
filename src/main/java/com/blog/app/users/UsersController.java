@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.blog.app.common.dto.ErrorResponse;
+import com.blog.app.security.JWTService;
+import com.blog.app.users.UsersService.InvalidCredentialsException;
 import com.blog.app.users.UsersService.UserNotFoundException;
 import com.blog.app.users.dto.CreateUserRequest;
 import com.blog.app.users.dto.UserResponse;
@@ -27,29 +29,42 @@ public class UsersController {
 	
 	@Autowired
 	private ModelMapper modelMapper;
+	
+	@Autowired
+	private JWTService jwtService;
 
 	@PostMapping("")
 	ResponseEntity<UserResponse> signupUser(@RequestBody CreateUserRequest userDto) {
 		UserEntity savedUser = usersService.createUser(userDto);
 		URI savedUserUri = URI.create("/users/" +savedUser.getId());
-		return ResponseEntity.created(savedUserUri).body(modelMapper.map(savedUser, UserResponse.class));
+		var userResponse =modelMapper.map(savedUser, UserResponse.class);
+		userResponse.setToken(jwtService.createJWT(savedUser.getId()));
+		
+		return ResponseEntity.created(savedUserUri).body(userResponse);
 	}
 	
 	@PostMapping("/login")
 	ResponseEntity<UserResponse> loginUser(@RequestBody LoginUserRequest request) {
 		UserEntity savedUser = usersService.loginUser(request.getUserName(), request.getPassword());
-		return ResponseEntity.ok(modelMapper.map(savedUser, UserResponse.class));
+		var userResponse =modelMapper.map(savedUser, UserResponse.class);
+		userResponse.setToken(jwtService.createJWT(savedUser.getId()));
+		
+		return ResponseEntity.ok(userResponse);
 	}
 	
-	@ExceptionHandler({UserNotFoundException.class})
-	ResponseEntity<ErrorResponse> handleUserNotFoundException(UserNotFoundException ex){
+	@ExceptionHandler({UserNotFoundException.class, InvalidCredentialsException.class})
+	ResponseEntity<ErrorResponse> handleUserException(Exception ex){
 		String message;
 		HttpStatus status;
 		
 		if(ex instanceof UserNotFoundException) {
 			message = ex.getMessage();
 			status = HttpStatus.NOT_FOUND;
-		} else {
+		} else if(ex instanceof InvalidCredentialsException) {
+			message = ex.getMessage();
+			status = HttpStatus.UNAUTHORIZED;
+		} 
+		else {
 			message = "Something went wrong";
 			status = HttpStatus.INTERNAL_SERVER_ERROR;
 		}
